@@ -24,30 +24,17 @@ workflows:
         script: |
           set -e
           INFO_PLIST="ios/Runner/Info.plist"
-          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string This app needs photo library access to pick chart images." "$INFO_PLIST" || \
-          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription This app needs photo library access to pick chart images." "$INFO_PLIST"
-          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string This app may use the camera to capture chart images." "$INFO_PLIST" || \
-          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription This app may use the camera to capture chart images." "$INFO_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string This app needs photo library access to pick chart images." "$INFO_PLIST" || true
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string This app may use the camera to capture chart images." "$INFO_PLIST" || true
       - name: Build unsigned IPA
         script: |
           set -e
           flutter build ipa --release --no-codesign \
             --build-name=1.0.0 --build-number=$(date +%Y%m%d%H%M)
+      - name: List build outputs
+        script: |
+          echo "=== iOS build outputs ==="
+          ls -R build/ios || true
     artifacts:
       - build/ios/ipa/*.ipa
-
-  android_release:
-    name: Android — Release APK (auto-create platforms)
-    environment:
-      flutter: stable
-      java: 17
-    scripts:
-      - name: Bootstrap & build
-        script: |
-          set -e
-          flutter --version
-          flutter create .
-          flutter pub get
-          flutter build apk --release
-    artifacts:
-      - build/app/outputs/**/*.apk
+      - build/ios/**/*.ipa
