@@ -1,42 +1,53 @@
 workflows:
   ios_ipa_unsigned:
-    name: iOS — Unsigned IPA (clean, no codesign)
+    name: iOS — Unsigned IPA (auto-create platforms)
     environment:
       flutter: stable
       xcode: 15.4
+      cocoapods: default
     scripts:
-      - name: Clean & deps
+      - name: Bootstrap Flutter project
         script: |
           set -e
-          flutter clean
-          flutter precache --ios
+          flutter --version
+          flutter create .
           flutter pub get
-          cd ios || true
+      - name: iOS deps (CocoaPods)
+        script: |
+          set -e
+          cd ios
           rm -rf Pods Podfile.lock || true
-          pod repo update || true
-          pod install || true
-          cd .. || true
+          pod repo update
+          pod install
+          cd ..
+      - name: Add iOS usage descriptions (camera/photos)
+        script: |
+          set -e
+          INFO_PLIST="ios/Runner/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string This app needs photo library access to pick chart images." "$INFO_PLIST" || \
+          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription This app needs photo library access to pick chart images." "$INFO_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string This app may use the camera to capture chart images." "$INFO_PLIST" || \
+          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription This app may use the camera to capture chart images." "$INFO_PLIST"
       - name: Build unsigned IPA
         script: |
           set -e
-          flutter build ipa --release --no-codesign             --build-name=1.0.0 --build-number=$(date +%Y%m%d%H%M)
+          flutter build ipa --release --no-codesign \
+            --build-name=1.0.0 --build-number=$(date +%Y%m%d%H%M)
     artifacts:
       - build/ios/ipa/*.ipa
 
   android_release:
-    name: Android — Release APK (clean)
+    name: Android — Release APK (auto-create platforms)
     environment:
       flutter: stable
       java: 17
     scripts:
-      - name: Clean & deps
+      - name: Bootstrap & build
         script: |
           set -e
-          flutter clean
+          flutter --version
+          flutter create .
           flutter pub get
-      - name: Build APK
-        script: |
-          set -e
           flutter build apk --release
     artifacts:
       - build/app/outputs/**/*.apk
