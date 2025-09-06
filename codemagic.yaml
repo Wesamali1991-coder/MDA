@@ -1,0 +1,42 @@
+workflows:
+  ios_ipa_unsigned:
+    name: iOS — Unsigned IPA (clean, no codesign)
+    environment:
+      flutter: stable
+      xcode: 15.4
+    scripts:
+      - name: Clean & deps
+        script: |
+          set -e
+          flutter clean
+          flutter precache --ios
+          flutter pub get
+          cd ios || true
+          rm -rf Pods Podfile.lock || true
+          pod repo update || true
+          pod install || true
+          cd .. || true
+      - name: Build unsigned IPA
+        script: |
+          set -e
+          flutter build ipa --release --no-codesign             --build-name=1.0.0 --build-number=$(date +%Y%m%d%H%M)
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+  android_release:
+    name: Android — Release APK (clean)
+    environment:
+      flutter: stable
+      java: 17
+    scripts:
+      - name: Clean & deps
+        script: |
+          set -e
+          flutter clean
+          flutter pub get
+      - name: Build APK
+        script: |
+          set -e
+          flutter build apk --release
+    artifacts:
+      - build/app/outputs/**/*.apk
